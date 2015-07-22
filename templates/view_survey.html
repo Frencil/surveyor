@@ -1,0 +1,6 @@
+{% extends "layout.html" %}
+{% block body %}
+  <h2>{{ survey.title }}</h2>
+  <br>
+  {{ survey.text|safe }}
+{% endblock %}

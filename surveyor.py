@@ -34,12 +34,15 @@ def teardown_request(exception):
     db = getattr(g, 'db', None)
     if db is not None:
         db.close()
+    
+        
+# Routes
 
 @app.route('/')
-def show_questions():
-    cur = g.db.execute('select title, text from questions order by id desc')
-    questions = [dict(title=row[0], text=row[1]) for row in cur.fetchall()]
-    return render_template('show_questions.html', questions=questions)
+def list_surveys():
+    cur = g.db.execute('select title, text from surveys order by id desc')
+    surveys = [dict(title=row[0], text=row[1]) for row in cur.fetchall()]
+    return render_template('list_surveys.html', surveys=surveys)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -51,25 +54,36 @@ def login():
             error = 'Invalid password'
         else:
             session['logged_in'] = True
-            flash('You were logged in')
-            return redirect(url_for('show_questions'))
+            flash(u'You were logged in', 'success')
+            return redirect(url_for('show_surveys'))
     return render_template('login.html', error=error)
 
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
-    flash('You were logged out')
-    return redirect(url_for('show_questions'))
+    flash(u'You were logged out', 'success')
+    return redirect(url_for('show_surveys'))
 
-@app.route('/add_question', methods=['POST'])
-def add_question():
+@app.route('/survey/<int:id>')
+def view_survey(id):
+    query = g.db.execute('select * from surveys where id = ?', [id])
+    row = query.fetchone()
+    if (row == None):
+        abort(404)
+    else:
+        survey = dict(id=row[0], title=row[1], text=row[2])
+        print(survey)
+        return render_template('view_survey.html', survey=survey)
+        
+@app.route('/survey/add', methods=['POST'])
+def add_survey():
     if not session.get('logged_in'):
         abort(401)
-    g.db.execute('insert into questions (title, text) values (?, ?)',
+    g.db.execute('insert into surveys (title, text) values (?, ?)',
                  [request.form['title'], request.form['text']])
     g.db.commit()
-    flash('New question was successfully posted')
-    return redirect(url_for('show_questions'))
+    flash(u'New survey was successfully posted', 'success')
+    return redirect(url_for('show_surveys'))
 
 if __name__ == '__main__':
     app.run()

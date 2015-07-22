@@ -8,17 +8,32 @@
 </head>
 <body>
   <div class="container">
-    <h1>Surveyor</h1>
-    <div>
+
+    <div class="row">
+      <h1>Surveyor</h1>
+    </div>
+  
+    <div class="row">
     {% if not session.logged_in %}
       <a href="{{ url_for('login') }}">log in</a>
     {% else %}
       <a href="{{ url_for('logout') }}">log out</a>
     {% endif %}
     </div>
-    {% for message in get_flashed_messages() %}
-      <div>{{ message }}</div>
-    {% endfor %}
+
+    <div class="row" id="messages">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <ul class=flashes>
+        {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    {% endwith %}
+    </div>
+
     {% block body %}{% endblock %}
+  
   </div>
 </html>

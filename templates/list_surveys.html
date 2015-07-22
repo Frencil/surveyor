@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block body %}
   {% if session.logged_in %}
-    <form action="{{ url_for('add_question') }}" method=post class=add-question>
+    <form action="{{ url_for('add_survey') }}" method=post class=add-survey>
       <dl>
         <dt>Title:
         <dd><input type=text size=30 name=title>
@@ -11,11 +11,11 @@
       </dl>
     </form>
   {% endif %}
-  <ul class=questions>
-  {% for question in questions %}
-    <li><h2>{{ question.title }}</h2>{{ question.text|safe }}
+  <ul class=surveys>
+  {% for survey in surveys %}
+    <li><h2>{{ survey.title }}</h2>{{ survey.text|safe }}
   {% else %}
-    <li><em>Unbelievable.  No questions here so far</em>
+    <li><em>Unbelievable. No surveys here so far</em>
   {% endfor %}
   </ul>
 {% endblock %}
