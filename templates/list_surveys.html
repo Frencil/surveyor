@@ -11,11 +11,12 @@
       </dl>
     </form>
   {% endif %}
-  <ul class=surveys>
+
+  <h3>Surveys:</h3>
   {% for survey in surveys %}
-    <li><h2>{{ survey.title }}</h2>{{ survey.text|safe }}
+    <div>{{ survey.title }} - {{ survey.text|safe }}</div>
   {% else %}
-    <li><em>Unbelievable. No surveys here so far</em>
+    <div><em>No surveys here so far.</em></div>
   {% endfor %}
   </ul>
 {% endblock %}

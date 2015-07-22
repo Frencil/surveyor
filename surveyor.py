@@ -1,20 +1,30 @@
 # -*- coding: utf-8 -*-
 
-# all the imports
+# Imports
 import sqlite3
+from functools import wraps
 from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash
 from contextlib import closing
 
-# configuration
+# Configuration
 DATABASE = '/tmp/surveyor.db'
 DEBUG = True
 SECRET_KEY = 'development key'
 USERNAME = 'admin'
 PASSWORD = 'default'
 
-# initialize the application
+# Initialize the application
 app = Flask(__name__)
 app.config.from_object(__name__)
+
+# Additional decorators
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if session['logged_in'] is not True:
+            return redirect(url_for('login', next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function
 
 def init_db():
     with closing(connect_db()) as db:
@@ -39,10 +49,8 @@ def teardown_request(exception):
 # Routes
 
 @app.route('/')
-def list_surveys():
-    cur = g.db.execute('select title, text from surveys order by id desc')
-    surveys = [dict(title=row[0], text=row[1]) for row in cur.fetchall()]
-    return render_template('list_surveys.html', surveys=surveys)
+def index():
+    return render_template('index.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -55,27 +63,46 @@ def login():
         else:
             session['logged_in'] = True
             flash(u'You were logged in', 'success')
-            return redirect(url_for('show_surveys'))
+            return redirect(url_for('list_surveys'))
     return render_template('login.html', error=error)
 
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
     flash(u'You were logged out', 'success')
-    return redirect(url_for('show_surveys'))
+    return redirect(url_for('list_surveys'))
 
-@app.route('/survey/<int:id>')
+@app.route('/surveys')
+def list_surveys():
+    cur = g.db.execute('select title, text from surveys order by id desc')
+    surveys = [dict(title=row[0], text=row[1]) for row in cur.fetchall()]
+    return render_template('list_surveys.html', surveys=surveys)
+
+@app.route('/surveys/<int:id>')
 def view_survey(id):
     query = g.db.execute('select * from surveys where id = ?', [id])
     row = query.fetchone()
     if (row == None):
         abort(404)
     else:
-        survey = dict(id=row[0], title=row[1], text=row[2])
-        print(survey)
+        survey = dict(id=row[0], title=row[1], text=row[2], is_open=row[3],
+                      date_created=row[4], date_opened=row[5], date_closed= row[6])
         return render_template('view_survey.html', survey=survey)
+
+@app.route('/surveys/edit/<int:id>')
+@login_required
+def edit_survey(id):
+    query = g.db.execute('select * from surveys where id = ?', [id])
+    row = query.fetchone()
+    if (row == None):
+        abort(404)
+    else:
+        survey = dict(id=row[0], title=row[1], text=row[2], is_open=row[3],
+                      date_created=row[4], date_opened=row[5], date_closed= row[6])
+        return render_template('edit_survey.html', survey=survey)
+
         
-@app.route('/survey/add', methods=['POST'])
+@app.route('/surveys/add', methods=['POST'])
 def add_survey():
     if not session.get('logged_in'):
         abort(401)
@@ -84,6 +111,8 @@ def add_survey():
     g.db.commit()
     flash(u'New survey was successfully posted', 'success')
     return redirect(url_for('show_surveys'))
+
+# Run
 
 if __name__ == '__main__':
     app.run()
