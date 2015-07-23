@@ -22,6 +22,7 @@ app.config.from_object(__name__)
 db = SQLAlchemy(app)
 
 # Models
+
 class Survey(db.Model):
     __tablename__ = 'surveys'
     id = db.Column(db.Integer, primary_key=True)
@@ -31,6 +32,8 @@ class Survey(db.Model):
     date_created = db.Column(db.DateTime)
     date_opened = db.Column(db.DateTime)
     date_closed = db.Column(db.DateTime)
+
+    questions = db.relationship('Question', backref='surveys')
 
     def __init__(self, title, text, is_open=None):
         self.title = title
@@ -51,7 +54,9 @@ class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.Text)
     surveys_id = db.Column(db.Integer, db.ForeignKey('surveys.id'))
+    
     survey = db.relationship('Survey', backref=db.backref('surveys', lazy='dynamic'))
+    options = db.relationship('Option', backref='questions')
 
     def __init__(self, text, survey):
         self.text = text
@@ -60,10 +65,27 @@ class Question(db.Model):
     def __repr__(self):
         return '<Question %r>' % self.id
 
+    
+class Option(db.Model):
+    __tablename__ = 'options'
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.Text)
+    questions_id = db.Column(db.Integer, db.ForeignKey('questions.id'))
+    
+    question = db.relationship('Question', backref=db.backref('questions', lazy='dynamic'))
+
+    def __init__(self, text, question):
+        self.text = text
+        self.question = question
+
+    def __repr__(self):
+        return '<Question %r>' % self.id
+
 
 # DB Functions
 
 def init_db():
+    db.drop_all()
     db.create_all()
     '''
     with closing(connect_db()) as db:

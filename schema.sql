@@ -20,8 +20,8 @@ create table questions (
 drop table if exists options;
 create table options (
   id integer primary key autoincrement,
-  questions_id integer not null,
   text text not null,
+  questions_id integer not null,
   foreign key(questions_id) references questions(id)
 );
   
@@ -29,7 +29,19 @@ drop table if exists responses;
 create table responses (
   id integer primary key autoincrement,
   options_id integer not null,
+  users_id integer not null,
   text text not null,
   date_created datetime default current_timestamp,
   foreign key(options_id) references options(id)
+  foreign key(users_id) references users(id)
+);
+
+drop table if exists users;
+create table users (
+  id integer primary key autoincrement,
+  email text not null,
+  password text not null,
+  name text,
+  is_active integer not null default 1,
+  is_admin integer not null default 0
 );
