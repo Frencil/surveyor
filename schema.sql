@@ -13,7 +13,6 @@ drop table if exists questions;
 create table questions (
   id integer primary key autoincrement,
   surveys_id integer not null,
-  title text not null,
   text text not null,
   foreign key(surveys_id) references surveys(id)
 );

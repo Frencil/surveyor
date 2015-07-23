@@ -5,9 +5,12 @@ import sqlite3
 from functools import wraps
 from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash
 from contextlib import closing
+from flask.ext.sqlalchemy import SQLAlchemy
+from datetime import datetime
 
 # Configuration
 DATABASE = '/tmp/surveyor.db'
+SQLALCHEMY_DATABASE_URI = 'sqlite:////tmp/surveyor.db'
 DEBUG = True
 SECRET_KEY = 'development key'
 USERNAME = 'admin'
@@ -16,21 +19,58 @@ PASSWORD = 'default'
 # Initialize the application
 app = Flask(__name__)
 app.config.from_object(__name__)
+db = SQLAlchemy(app)
 
-# Additional decorators
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if session['logged_in'] is not True:
-            return redirect(url_for('login', next=request.url))
-        return f(*args, **kwargs)
-    return decorated_function
+# Models
+class Survey(db.Model):
+    __tablename__ = 'surveys'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.Text)
+    text = db.Column(db.Text)
+    is_open = db.Column(db.Integer)
+    date_created = db.Column(db.DateTime)
+    date_opened = db.Column(db.DateTime)
+    date_closed = db.Column(db.DateTime)
+
+    def __init__(self, title, text, is_open=None):
+        self.title = title
+        self.text = text
+        self.date_created = datetime.utcnow()
+        if is_open is True:
+            self.is_open = 1
+            self.date_opened = datetime.utcnow()
+        else:
+            self.is_open = 0
+
+    def __repr__(self):
+        return '<Survey %r>' % self.id
+
+
+class Question(db.Model):
+    __tablename__ = 'questions'
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.Text)
+    surveys_id = db.Column(db.Integer, db.ForeignKey('surveys.id'))
+    survey = db.relationship('Survey', backref=db.backref('surveys', lazy='dynamic'))
+
+    def __init__(self, text, survey):
+        self.text = text
+        self.survey = survey
+
+    def __repr__(self):
+        return '<Question %r>' % self.id
+
+
+# DB Functions
 
 def init_db():
+    db.create_all()
+    '''
     with closing(connect_db()) as db:
         with app.open_resource('schema.sql', mode='r') as f:
             db.cursor().executescript(f.read())
         db.commit()
+    '''
 
 def connect_db():
     return sqlite3.connect(app.config['DATABASE'])
@@ -90,7 +130,6 @@ def view_survey(id):
         return render_template('view_survey.html', survey=survey)
 
 @app.route('/surveys/edit/<int:id>')
-@login_required
 def edit_survey(id):
     query = g.db.execute('select * from surveys where id = ?', [id])
     row = query.fetchone()
