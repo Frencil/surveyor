@@ -3,7 +3,6 @@
 # Imports
 import sqlite3
 from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash
-from contextlib import closing
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
 from flask.ext.wtf import Form
@@ -133,12 +132,6 @@ class User(db.Model):
 def init_db():
     db.drop_all()
     db.create_all()
-    '''
-    with closing(connect_db()) as db:
-        with app.open_resource('schema.sql', mode='r') as f:
-            db.cursor().executescript(f.read())
-        db.commit()
-    '''
 
 def connect_db():
     return sqlite3.connect(app.config['DATABASE'])
@@ -152,7 +145,7 @@ def teardown_request(exception):
     db = getattr(g, 'db', None)
     if db is not None:
         db.close()
-
+    
 
 # Forms
 

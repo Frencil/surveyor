@@ -43,5 +43,6 @@ create table users (
   password text not null,
   name text,
   is_active integer not null default 1,
-  is_admin integer not null default 0
+  is_admin integer not null default 0,
+  date_registered datetime default current_timestamp,
 );

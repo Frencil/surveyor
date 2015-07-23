@@ -5,10 +5,12 @@
   <title>Surveyor</title>
   <link rel=stylesheet type=text/css href="{{ url_for('static', filename='normalize.css') }}">
   <link rel=stylesheet type=text/css href="{{ url_for('static', filename='skeleton.css') }}">
+  <link rel=stylesheet type=text/css href="{{ url_for('static', filename='surveyor.css') }}">
 </head>
 <body>
-  <div class="container">
 
+  <div class="container">
+ 
     <div class="row">
       <div class="four columns">
         <h1>Surveyor</h1>
@@ -39,13 +41,39 @@
         </div>
   
       </div>
+  
     </div>
+  </div>
 
-    <hr />
+  <nav class="navbar">
+    <div class="container">
+      <ul class="navbar-list">
+        {% if current_user.is_active() %}
+          {% if current_user.is_admin %}
+            <li class="navbar-item"><a class="navbar-link" href="#">Draft Surveys</a></li>
+          {% endif %}
+        {% endif %}
+        <li class="navbar-item"><a class="navbar-link" href="#">Open Surveys</a></li>
+        <li class="navbar-item"><a class="navbar-link" href="#">Closed Surveys</a></li>
+        {% if current_user.is_active() %}
+          <li class="navbar-item"><a class="navbar-link" href="#">My Responses</a></li>
+        {% endif %}
+        {% if current_user.is_active() %}
+          {% if current_user.is_admin %}
+            <li class="navbar-item"><a class="navbar-link" href="#">Registered Users</a></li>
+          {% endif %}
+        {% endif %}
+        <li class="navbar-item"><a class="navbar-link" href="#">Help+About</a></li>
+    </div>
+  </nav>
+
+  <br>
+  <div class="container">
   
     <h3>{% block title %}{% endblock %}</h3>
 
     {% block body %}{% endblock %}
   
   </div>
+  
 </html>
