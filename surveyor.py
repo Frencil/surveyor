@@ -2,11 +2,14 @@
 
 # Imports
 import sqlite3
-from functools import wraps
 from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash
 from contextlib import closing
 from flask.ext.sqlalchemy import SQLAlchemy
+from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
+from flask.ext.wtf import Form
+from wtforms import BooleanField, TextField, PasswordField, validators
 from datetime import datetime
+
 
 # Configuration
 DATABASE = '/tmp/surveyor.db'
@@ -20,6 +23,16 @@ PASSWORD = 'default'
 app = Flask(__name__)
 app.config.from_object(__name__)
 db = SQLAlchemy(app)
+
+# Login manager stuff
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+@login_manager.user_loader
+def load_user(id):
+    return User.query.get(int(id))
 
 # Models
 
@@ -81,6 +94,39 @@ class Option(db.Model):
     def __repr__(self):
         return '<Question %r>' % self.id
 
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.Text)
+    password = db.Column(db.Text)
+    name = db.Column(db.Text)
+    is_active = db.Column(db.Integer)
+    is_admin = db.Column(db.Integer)
+    date_registered = db.Column(db.DateTime)
+
+    def __init__(self, email, password, name=None):
+        self.email = email
+        self.password = password # needs encryption
+        self.name = name
+        self.is_active = 1
+        self.is_admin = 0
+        self.date_registered = datetime.utcnow()
+
+    def is_authenticated(self):
+        return True
+ 
+    def is_active(self):
+        return bool(self.is_active)
+ 
+    def is_anonymous(self):
+        return False
+ 
+    def get_id(self):
+        return self.id
+
+    def __repr__(self):
+        return '<User %r>' % self.id
+
 
 # DB Functions
 
@@ -106,7 +152,23 @@ def teardown_request(exception):
     db = getattr(g, 'db', None)
     if db is not None:
         db.close()
-    
+
+
+# Forms
+
+class RegisterForm(Form):
+    email = TextField('Email Address', [
+        validators.Length(min=6, message=u'That\'s a little short for a valid email address.'),
+        validators.Email(message=u'That\'s not a valid email address.')
+    ])
+    password = PasswordField('Password', [
+        validators.Length(min=6, message=u'Good passwords are at least 6 characters. Preferably more.'),
+    ])
+
+class LoginForm(Form):
+    email = TextField('Email Address')
+    password = PasswordField('Password')  
+
         
 # Routes
 
@@ -114,25 +176,46 @@ def teardown_request(exception):
 def index():
     return render_template('index.html')
 
-@app.route('/login', methods=['GET', 'POST'])
+
+@app.route('/register' , methods=['GET','POST'])
+def register():
+    form = RegisterForm()
+    if form.validate_on_submit():
+        user = User(request.form['email'], request.form['password'])
+        db.session.add(user)
+        db.session.commit()
+        flash('Registration successful')
+        return redirect(url_for('login'))
+    print(form.errors)
+    return render_template('register.html', form=form)
+
+
+@app.route('/login',methods=['GET','POST'])
 def login():
-    error = None
-    if request.method == 'POST':
-        if request.form['username'] != app.config['USERNAME']:
-            error = 'Invalid username'
-        elif request.form['password'] != app.config['PASSWORD']:
-            error = 'Invalid password'
-        else:
-            session['logged_in'] = True
-            flash(u'You were logged in', 'success')
-            return redirect(url_for('list_surveys'))
-    return render_template('login.html', error=error)
+
+    form = LoginForm()
+    if form.validate_on_submit():
+        
+        email = request.form['email']
+        password = request.form['password']
+        registered_user = User.query.filter_by(email=email,password=password).one()
+        if registered_user is None:
+            flash('Username or Password is invalid' , 'error')
+            return redirect(url_for('login'))
+        
+        login_user(registered_user)
+        flash(u'Successfully logged in', 'success')
+        return redirect(request.args.get('next') or url_for('index'))
+
+    return render_template('login.html', form=form)
+
 
 @app.route('/logout')
 def logout():
-    session.pop('logged_in', None)
-    flash(u'You were logged out', 'success')
-    return redirect(url_for('list_surveys'))
+    logout_user()
+    flash(u'Successfully logged out', 'success')
+    return redirect(url_for('index')) 
+
 
 @app.route('/surveys')
 def list_surveys():

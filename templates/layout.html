@@ -10,28 +10,40 @@
   <div class="container">
 
     <div class="row">
-      <h1>Surveyor</h1>
-    </div>
+      <div class="four columns">
+        <h1>Surveyor</h1>
+      </div>
+      <div class="eight columns">
   
-    <div class="row">
-    {% if not session.logged_in %}
-      <a href="{{ url_for('login') }}">log in</a>
-    {% else %}
-      <a href="{{ url_for('logout') }}">log out</a>
-    {% endif %}
+        <div class="row u-pull-right" id="authentication">
+          {% if current_user.is_authenticated() %}
+          Logged in as User #{{ current_user.id }}<br>
+          <a href="{{ url_for('logout') }}">Log out</a>
+          {% else %}
+          Not logged in<br>
+          <a href="{{ url_for('login') }}">Log in</a><br>
+          <a href="{{ url_for('register') }}">Register</a>
+          {% endif %}
+        </div>
+
+        <div class="row u-pull-right" id="messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+          <ul class=flashes>
+            {% for category, message in messages %}
+            <li class="{{ category }}">{{ message }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        {% endwith %}
+        </div>
+  
+      </div>
     </div>
 
-    <div class="row" id="messages">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-      <ul class=flashes>
-        {% for category, message in messages %}
-        <li class="{{ category }}">{{ message }}</li>
-        {% endfor %}
-      </ul>
-      {% endif %}
-    {% endwith %}
-    </div>
+    <hr />
+  
+    <h3>{% block title %}{% endblock %}</h3>
 
     {% block body %}{% endblock %}
   

@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+{% block title %}Register{% endblock %}
+{% block body %}
+<form method="POST" action="{{ url_for('register') }}">
+  {{ form.csrf_token }}
+
+  <div class="row">
+    <div class="four columns">
+      {{ form.email.label }}
+      {{ form.email(class="css_class") }}
+    </div>
+    <div class="eight columns">
+      {% if form.errors['email'] %}
+        {{ form.errors['email'][0] }}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="four columns">
+      {{ form.password.label }}
+      {{ form.password() }}
+    </div>
+    <div class="eight columns">
+      {% if form.errors['password'] %}
+        {{ form.errors['password'][0] }}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row">
+    <input type="submit" name="submit" value="Register"/>
+  </div>
+
+</form>
+{% endblock %}
