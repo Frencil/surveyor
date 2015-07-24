@@ -14,9 +14,7 @@ from datetime import datetime
 DATABASE = '/tmp/surveyor.db'
 SQLALCHEMY_DATABASE_URI = 'sqlite:////tmp/surveyor.db'
 DEBUG = True
-SECRET_KEY = 'development key'
-USERNAME = 'admin'
-PASSWORD = 'default'
+SECRET_KEY = 'foo'
 
 # Initialize the application
 app = Flask(__name__)
