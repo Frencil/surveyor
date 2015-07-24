@@ -2,15 +2,32 @@
 {% block title %}Login{% endblock %}
 {% block body %}
 <form method="POST" action="{{ url_for('login') }}">
+  
   {{ form.csrf_token }}
-  <div>
+
+  <div class="row">
     {{ form.email.label }}
-    {{ form.email(class="css_class") }}
+    {% if form.errors['email'] %}
+      {% for error in form.errors['email'] %}
+        <div class="error">{{ error }}</div>
+      {% endfor %}
+    {% endif %}
+    {{ form.email(class="required") }}
   </div>
-  <div>
+
+  <div class="row">
     {{ form.password.label }}
-    {{ form.password() }}
+    {% if form.errors['password'] %}
+      {% for error in form.errors['password'] %}
+        <div class="error">{{ error }}</div>
+      {% endfor %}
+    {% endif %}
+    {{ form.password(class="required") }}
   </div>
-  <input type="submit" name="submit" value="Go"/>
+
+  <div class="row">
+    <input type="submit" name="submit" value="Go"/>
+  </div>
+  
 </form>
 {% endblock %}

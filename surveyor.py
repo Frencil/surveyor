@@ -99,7 +99,7 @@ class User(db.Model):
     email = db.Column(db.Text)
     password = db.Column(db.Text)
     name = db.Column(db.Text)
-    is_active = db.Column(db.Integer)
+    is_activated = db.Column(db.Integer)
     is_admin = db.Column(db.Integer)
     date_registered = db.Column(db.DateTime)
 
@@ -107,15 +107,20 @@ class User(db.Model):
         self.email = email
         self.password = password # needs encryption
         self.name = name
-        self.is_active = 1
+        self.is_activated = 1
         self.is_admin = 0
         self.date_registered = datetime.utcnow()
+
+    def check_password(self, password):
+        if password == self.password:
+            return True
+        return False
 
     def is_authenticated(self):
         return True
  
     def is_active(self):
-        return bool(self.is_active)
+        return bool(self.is_activated)
  
     def is_anonymous(self):
         return False
@@ -151,16 +156,47 @@ def teardown_request(exception):
 
 class RegisterForm(Form):
     email = TextField('Email Address', [
+        validators.Required(),
         validators.Length(min=6, message=u'That\'s a little short for a valid email address.'),
         validators.Email(message=u'That\'s not a valid email address.')
     ])
     password = PasswordField('Password', [
+        validators.Required(),
         validators.Length(min=6, message=u'Good passwords are at least 6 characters. Preferably more.'),
+        validators.EqualTo('confirm', message='Passwords must match')
+    ])
+    confirm = PasswordField('Confirm Password', [
+        validators.Required()
     ])
 
 class LoginForm(Form):
-    email = TextField('Email Address')
-    password = PasswordField('Password')  
+    email = TextField('Email Address', [validators.Required()])
+    password = PasswordField('Password', [validators.Required()])
+
+    def __init__(self, *args, **kwargs):
+        Form.__init__(self, *args, **kwargs)
+        self.user = None
+        
+    def validate(self):
+        rv = Form.validate(self)
+        if not rv:
+            return False
+
+        user = User.query.filter_by(email=self.email.data.lower()).first()
+        if user is None:
+            self.email.errors.append('That email address is not registered')
+            return False
+        
+        if not user.is_active():
+            self.email.errors.append('That account has been deactivated')
+            return False
+
+        if not user.check_password(self.password.data):
+            self.password.errors.append('Invalid password')
+            return False
+
+        self.user = user
+        return True
 
         
 # Routes
@@ -174,7 +210,7 @@ def index():
 def register():
     form = RegisterForm()
     if form.validate_on_submit():
-        user = User(request.form['email'], request.form['password'])
+        user = User(request.form['email'].lower(), request.form['password'])
         db.session.add(user)
         db.session.commit()
         flash('Registration successful')
@@ -185,21 +221,11 @@ def register():
 
 @app.route('/login',methods=['GET','POST'])
 def login():
-
     form = LoginForm()
     if form.validate_on_submit():
-        
-        email = request.form['email']
-        password = request.form['password']
-        registered_user = User.query.filter_by(email=email,password=password).one()
-        if registered_user is None:
-            flash('Username or Password is invalid' , 'error')
-            return redirect(url_for('login'))
-        
-        login_user(registered_user)
+        login_user(form.user)
         flash(u'Successfully logged in', 'success')
         return redirect(request.args.get('next') or url_for('index'))
-
     return render_template('login.html', form=form)
 
 
@@ -207,35 +233,47 @@ def login():
 def logout():
     logout_user()
     flash(u'Successfully logged out', 'success')
-    return redirect(url_for('index')) 
+    return redirect(url_for('index'))
 
 
 @app.route('/surveys')
 def list_surveys():
-    cur = g.db.execute('select title, text from surveys order by id desc')
-    surveys = [dict(title=row[0], text=row[1]) for row in cur.fetchall()]
-    return render_template('list_surveys.html', surveys=surveys)
+    return redirect(url_for('list_open_surveys'))
+
+
+@app.route('/surveys/open')
+def list_open_surveys():
+    surveys = Survey.query.filter_by(is_open=1).all()
+    return render_template('list_surveys.html', surveys=surveys, mode='open')
+
+
+@app.route('/surveys/closed')
+def list_closed_surveys():
+    surveys = Survey.query.filter_by(is_open=0).all()
+    return render_template('list_surveys.html', surveys=surveys, mode='closed')
+
+
+@app.route('/surveys/drafts')
+def list_draft_surveys():
+    surveys = Survey.query.filter_by(is_open=0).all()
+    return render_template('list_surveys.html', surveys=surveys, mode='draft')
+
 
 @app.route('/surveys/<int:id>')
 def view_survey(id):
-    query = g.db.execute('select * from surveys where id = ?', [id])
-    row = query.fetchone()
-    if (row == None):
+    survey = Survey.query.filter_by(id=id).first()
+    if (survey == None):
         abort(404)
     else:
-        survey = dict(id=row[0], title=row[1], text=row[2], is_open=row[3],
-                      date_created=row[4], date_opened=row[5], date_closed= row[6])
         return render_template('view_survey.html', survey=survey)
 
+    
 @app.route('/surveys/edit/<int:id>')
 def edit_survey(id):
-    query = g.db.execute('select * from surveys where id = ?', [id])
-    row = query.fetchone()
-    if (row == None):
+    survey = Survey.query.filter_by(id=id).first()
+    if (survey == None):
         abort(404)
     else:
-        survey = dict(id=row[0], title=row[1], text=row[2], is_open=row[3],
-                      date_created=row[4], date_opened=row[5], date_closed= row[6])
         return render_template('edit_survey.html', survey=survey)
 
         
@@ -248,6 +286,18 @@ def add_survey():
     g.db.commit()
     flash(u'New survey was successfully posted', 'success')
     return redirect(url_for('show_surveys'))
+
+
+@app.route('/users')
+def list_users():
+    return render_template('list_users.html')
+
+
+@app.route('/users/<int:id>')
+@login_required
+def my_account():
+    return render_template('my_account.html')
+
 
 # Run
 

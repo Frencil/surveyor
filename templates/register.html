@@ -5,27 +5,33 @@
   {{ form.csrf_token }}
 
   <div class="row">
-    <div class="four columns">
-      {{ form.email.label }}
-      {{ form.email(class="css_class") }}
-    </div>
-    <div class="eight columns">
-      {% if form.errors['email'] %}
-        {{ form.errors['email'][0] }}
-      {% endif %}
-    </div>
+    {{ form.email.label }}
+    {% if form.errors['email'] %}
+      {% for error in form.errors['email'] %}
+        <div class="error">{{ error }}</div>
+      {% endfor %}
+    {% endif %}
+    {{ form.email(class="required") }}
   </div>
 
   <div class="row">
-    <div class="four columns">
-      {{ form.password.label }}
-      {{ form.password() }}
-    </div>
-    <div class="eight columns">
-      {% if form.errors['password'] %}
-        {{ form.errors['password'][0] }}
-      {% endif %}
-    </div>
+    {{ form.password.label }}
+    {% if form.errors['password'] %}
+      {% for error in form.errors['password'] %}
+        <div class="error">{{ error }}</div>
+      {% endfor %}
+    {% endif %}
+    {{ form.password(class="required") }}
+  </div>
+
+  <div class="row">
+    {{ form.confirm.label }}
+    {% if form.errors['confirm'] %}
+      {% for error in form.errors['confirm'] %}
+        <div class="error">{{ error }}</div>
+      {% endfor %}
+    {% endif %}
+    {{ form.confirm(class="required") }}
   </div>
 
   <div class="row">

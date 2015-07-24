@@ -48,24 +48,29 @@
   <nav class="navbar">
     <div class="container">
       <ul class="navbar-list">
+        <li class="navbar-item"><a class="navbar-link" href="{{ url_for('index') }}">Help+About</a></li>
+        <li class="navbar-item"><a class="navbar-link" href="{{ url_for('list_open_surveys') }}">Open Surveys</a></li>
+        <li class="navbar-item"><a class="navbar-link" href="{{ url_for('list_closed_surveys') }}">Closed Surveys</a></li>
         {% if current_user.is_active() %}
-          {% if current_user.is_admin %}
-            <li class="navbar-item"><a class="navbar-link" href="#">Draft Surveys</a></li>
-          {% endif %}
+          <li class="navbar-item"><a class="navbar-link" href="{{ url_for('my_account', id=current_user.id) }}">My Account</a></li>
         {% endif %}
-        <li class="navbar-item"><a class="navbar-link" href="#">Open Surveys</a></li>
-        <li class="navbar-item"><a class="navbar-link" href="#">Closed Surveys</a></li>
-        {% if current_user.is_active() %}
-          <li class="navbar-item"><a class="navbar-link" href="#">My Responses</a></li>
-        {% endif %}
-        {% if current_user.is_active() %}
-          {% if current_user.is_admin %}
-            <li class="navbar-item"><a class="navbar-link" href="#">Registered Users</a></li>
-          {% endif %}
-        {% endif %}
-        <li class="navbar-item"><a class="navbar-link" href="#">Help+About</a></li>
+      </ul>
     </div>
   </nav>
+  
+  {% if current_user.is_active() %}
+    {% if current_user.is_admin == 1 %}
+  <nav class="navbar">
+    <div class="container">
+      <ul class="navbar-list">
+        <li class="navbar-item"><a class="navbar-link" href="{{ url_for('add_survey') }}">Add New Survey</a></li>
+        <li class="navbar-item"><a class="navbar-link" href="{{ url_for('list_draft_surveys') }}">Draft Surveys</a></li>
+        <li class="navbar-item"><a class="navbar-link" href="{{ url_for('list_users') }}">Registered Users</a></li>
+      </ul>
+    </div>
+  </nav>
+    {% endif %}
+  {% endif %}
 
   <br>
   <div class="container">
