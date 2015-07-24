@@ -6,7 +6,7 @@ from flask import Flask, request, session, g, redirect, url_for, abort, render_t
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
 from flask.ext.wtf import Form
-from wtforms import BooleanField, TextField, PasswordField, validators
+from wtforms import BooleanField, TextField, TextAreaField, PasswordField, validators
 from datetime import datetime
 
 
@@ -198,6 +198,9 @@ class LoginForm(Form):
         self.user = user
         return True
 
+class EditSurveyForm(Form):
+    title = TextField('Title', [validators.required()])
+    text = TextAreaField('Text', [validators.optional()])
         
 # Routes
 
@@ -210,7 +213,7 @@ def index():
 def register():
     form = RegisterForm()
     if form.validate_on_submit():
-        user = User(request.form['email'].lower(), request.form['password'])
+        user = User(form.email.data.lower(), form.password.data)
         db.session.add(user)
         db.session.commit()
         flash('Registration successful')
@@ -230,6 +233,7 @@ def login():
 
 
 @app.route('/logout')
+@login_required
 def logout():
     logout_user()
     flash(u'Successfully logged out', 'success')
@@ -254,6 +258,7 @@ def list_closed_surveys():
 
 
 @app.route('/surveys/drafts')
+@login_required
 def list_draft_surveys():
     surveys = Survey.query.filter_by(is_open=0).all()
     return render_template('list_surveys.html', surveys=surveys, mode='draft')
@@ -268,27 +273,35 @@ def view_survey(id):
         return render_template('view_survey.html', survey=survey)
 
     
-@app.route('/surveys/edit/<int:id>')
+@app.route('/surveys/edit/<int:id>',methods=['GET','POST'])
+@login_required
 def edit_survey(id):
     survey = Survey.query.filter_by(id=id).first()
     if (survey == None):
         abort(404)
-    else:
-        return render_template('edit_survey.html', survey=survey)
+    form = EditSurveyForm(obj=survey)
+    if form.validate_on_submit():
+        survey.title = form.title.data
+        survey.text = form.text.data
+        db.session.commit()
+        return redirect(url_for('view_survey',id=survey.id))
+    return render_template('edit_survey.html', form=form, survey=survey, mode='edit')
 
         
-@app.route('/surveys/add', methods=['POST'])
+@app.route('/surveys/add', methods=['GET','POST'])
+@login_required
 def add_survey():
-    if not session.get('logged_in'):
-        abort(401)
-    g.db.execute('insert into surveys (title, text) values (?, ?)',
-                 [request.form['title'], request.form['text']])
-    g.db.commit()
-    flash(u'New survey was successfully posted', 'success')
-    return redirect(url_for('show_surveys'))
+    form = EditSurveyForm()
+    if form.validate_on_submit():
+        survey = Survey(form.title.data, form.text.data)
+        db.session.add(survey)
+        db.session.commit()
+        return redirect(url_for('view_survey',id=survey.id))
+    return render_template('edit_survey.html', form=form, mode='add')
 
 
 @app.route('/users')
+@login_required
 def list_users():
     return render_template('list_users.html')
 

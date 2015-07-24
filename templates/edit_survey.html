@@ -1,12 +1,40 @@
 {% extends "layout.html" %}
+
+{% block title %}
+  {% if mode == 'edit' %}
+    Edit Survey #{{ survey.id }}
+  {% else %}
+    Add New Survey
+  {% endif %}
+{% endblock %}
+
 {% block body %}
-  <form action="{{ url_for('add_survey') }}" method=post class=add-survey>
-    <dl>
-      <dt>Title:
-      <dd><input type=text size=30 name=title value="{{ survey.title }}">
-      <dt>Text:
-      <dd><textarea name=text rows=5 cols=40>{{ survey.text|safe }}</textarea>
-      <dd><input type=submit value=Share>
-    </dl>
-  </form>
+{% if mode == 'edit' %}
+<form action="{{ url_for('edit_survey', id=survey.id) }}" method="POST">
+{% else %}
+<form action="{{ url_for('add_survey') }}" method="POST">
+{% endif %}
+  
+  {{ form.csrf_token }}
+  
+  <div class="row">
+    {{ form.title.label }}
+    {% if form.errors['title'] %}
+      {% for error in form.errors['title'] %}
+        <div class="error">{{ error }}</div>
+      {% endfor %}
+    {% endif %}
+    {{ form.title(class="required") }}
+  </div>
+
+  <div class="row">
+    {{ form.text.label }}
+    {{ form.text() }}
+  </div>
+
+  <div class="row">
+    <input type=submit value="Submit">
+  </div>
+
+</form>
 {% endblock %}

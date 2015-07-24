@@ -1,7 +1,10 @@
 {% extends "layout.html" %}
 {% block title %}Survey #{{ survey.id }} - {{ survey.title }}{% endblock %}
 {% block body %}
-  <h2>{{ survey.title }}</h2>
-  <br>
-  {{ survey.text|safe }}
+{% if current_user.is_active() %}
+  {% if current_user.is_admin == 1 %}
+    <p><a href="{{ url_for('edit_survey', id=survey.id) }}">Edit this survey</a></p>
+  {% endif %}
+{% endif %}
+<p>{{ survey.text|safe }}</p>
 {% endblock %}
