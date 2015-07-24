@@ -19,7 +19,7 @@ class SurveyorTestCase(unittest.TestCase):
 
     def test_empty_db(self):
         rv = self.app.get('/')
-        assert 'stub index' in str(rv.data)
+        assert 'Welcome to Surveyor' in str(rv.data)
 
     def test_create_unopened_survey(self):
         s1 = surveyor.Survey('test unopened', 'test text')
