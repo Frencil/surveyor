@@ -6,5 +6,9 @@
     <p><a href="{{ url_for('edit_survey', id=survey.id) }}">Edit this survey</a></p>
   {% endif %}
 {% endif %}
-<p>{{ survey.text|safe }}</p>
+
+{% filter markdown %}
+{{ survey.text|safe }}
+{% endfilter %}
+    
 {% endblock %}

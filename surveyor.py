@@ -6,6 +6,7 @@ from flask import Flask, request, session, g, redirect, url_for, abort, render_t
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
 from flask.ext.wtf import Form
+from flaskext.markdown import Markdown
 from wtforms import BooleanField, TextField, TextAreaField, PasswordField, validators, ValidationError
 from datetime import datetime
 
@@ -20,6 +21,7 @@ SECRET_KEY = 'foo'
 app = Flask(__name__)
 app.config.from_object(__name__)
 db = SQLAlchemy(app)
+Markdown(app)
 
 # Login manager stuff
 

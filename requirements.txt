@@ -1,3 +1,4 @@
 Flask-SQLAlchemy>=1.0
 flask-login>=0.2.11
 flask-wtf>=0.12
+flask-markdown>=0.3
