@@ -6,7 +6,7 @@ from flask import Flask, request, session, g, redirect, url_for, abort, render_t
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
 from flask.ext.wtf import Form
-from wtforms import BooleanField, TextField, TextAreaField, PasswordField, validators
+from wtforms import BooleanField, TextField, TextAreaField, PasswordField, validators, ValidationError
 from datetime import datetime
 
 
@@ -152,11 +152,17 @@ def teardown_request(exception):
 
 # Forms
 
+def unique_email(form, email):
+    user = User.query.filter_by(email=email.data.lower()).first()
+    if user is not None:
+        raise ValidationError('That email address is already registered')
+
 class RegisterForm(Form):
     email = TextField('Email Address', [
         validators.Required(),
         validators.Length(min=6, message=u'That\'s a little short for a valid email address.'),
-        validators.Email(message=u'That\'s not a valid email address.')
+        validators.Email(message=u'That\'s not a valid email address.'),
+        unique_email
     ])
     password = PasswordField('Password', [
         validators.Required(),
