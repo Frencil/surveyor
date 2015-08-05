@@ -19,7 +19,7 @@
   
         <div class="row u-pull-right" id="authentication">
           {% if current_user.is_authenticated() %}
-          Logged in as User #{{ current_user.id }}<br>
+          Logged in as {{ current_user.name_or_id() }}<br>
           <a href="{{ url_for('logout') }}">Log out</a>
           {% else %}
           Not logged in<br>
@@ -52,7 +52,7 @@
         <li class="navbar-item"><a class="navbar-link" href="{{ url_for('list_open_surveys') }}">Open Surveys</a></li>
         <li class="navbar-item"><a class="navbar-link" href="{{ url_for('list_closed_surveys') }}">Closed Surveys</a></li>
         {% if current_user.is_active() %}
-          <li class="navbar-item"><a class="navbar-link" href="{{ url_for('my_account', id=current_user.id) }}">My Account</a></li>
+          <li class="navbar-item"><a class="navbar-link" href="{{ url_for('account', id=current_user.id) }}">My Account</a></li>
         {% endif %}
       </ul>
     </div>

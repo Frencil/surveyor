@@ -126,6 +126,12 @@ class User(db.Model):
     def get_id(self):
         return self.id
 
+    def name_or_id(self):
+        if len(self.name) > 0:
+            return self.name
+        else:
+            return 'User #%r' % self.id
+
     def __repr__(self):
         return '<User %r>' % self.id
 
@@ -155,6 +161,8 @@ def teardown_request(exception):
 def unique_email(form, email):
     user = User.query.filter_by(email=email.data.lower()).first()
     if user is not None:
+        if current_user.is_authenticated() and current_user.email == user.email:
+            return True
         raise ValidationError('That email address is already registered')
 
 class RegisterForm(Form):
@@ -172,7 +180,7 @@ class RegisterForm(Form):
     confirm = PasswordField('Confirm Password', [
         validators.Required()
     ])
-
+   
 class LoginForm(Form):
     email = TextField('Email Address', [validators.Required()])
     password = PasswordField('Password', [validators.Required()])
@@ -201,6 +209,15 @@ class LoginForm(Form):
 
         self.user = user
         return True
+
+class AccountForm(Form):
+    email = TextField('Email Address', [
+        validators.Required(),
+        validators.Length(min=6, message=u'That\'s a little short for a valid email address.'),
+        validators.Email(message=u'That\'s not a valid email address.'),
+        unique_email
+    ])
+    name = TextField('User Name')
 
 class EditSurveyForm(Form):
     title = TextField('Title', [validators.required()])
@@ -310,10 +327,20 @@ def list_users():
     return render_template('list_users.html')
 
 
-@app.route('/users/<int:id>')
+@app.route('/users/<int:id>', methods=['GET','POST'])
 @login_required
-def my_account():
-    return render_template('my_account.html')
+def account(id):
+    user = User.query.filter_by(id=id).first()
+    if (user == None):
+        abort(404)
+    form = AccountForm(obj=user)
+    if form.validate_on_submit():
+        user.email = form.email.data
+        user.name = form.name.data
+        db.session.commit()
+        flash(u'Account successfully updated', 'success')
+        return redirect(url_for('account',id=user.id))
+    return render_template('account.html', form=form, user=user)
 
 
 # Run
