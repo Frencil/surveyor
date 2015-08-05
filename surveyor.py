@@ -57,6 +57,9 @@ class Survey(db.Model):
         else:
             self.is_open = 0
 
+    def question_count(self):
+        return len(self.questions)
+
     def __repr__(self):
         return '<Survey %r>' % self.id
 
@@ -223,7 +226,7 @@ class AccountForm(Form):
 
 class EditSurveyForm(Form):
     title = TextField('Title', [validators.required()])
-    text = TextAreaField('Text', [validators.optional()])
+    text = TextAreaField('Text - <small><a href="http://daringfireball.net/projects/markdown/basics">markdown documentation</a></small>', [validators.optional()])
         
 # Routes
 
@@ -239,7 +242,7 @@ def register():
         user = User(form.email.data.lower(), form.password.data)
         db.session.add(user)
         db.session.commit()
-        flash('Registration successful')
+        flash(u'Registration successful', 'success')
         return redirect(url_for('login'))
     print(form.errors)
     return render_template('register.html', form=form)
@@ -276,7 +279,8 @@ def list_open_surveys():
 
 @app.route('/surveys/closed')
 def list_closed_surveys():
-    surveys = Survey.query.filter_by(is_open=0).all()
+    now = unicode(datetime.now())
+    surveys = Survey.query.filter( Survey.is_open == 0, Survey.date_closed > 0, Survey.date_closed <= now ).all()
     return render_template('list_surveys.html', surveys=surveys, mode='closed')
 
 

@@ -3,8 +3,11 @@
 {% block body %}
   {% for survey in surveys %}
     <div class="row">
-      <h5><a href="{{ url_for('view_survey', id=survey.id) }}">#{{ survey.id }} • {{ survey.title }}</a></h5>
-      <p>{{ survey.text|safe }}</p>
+      <h5><a href="{{ url_for('view_survey', id=survey.id) }}">#{{ survey.id }} • {{ survey.title }} • {{ survey.question_count() }} Questions</a></h5>
+{% filter markdown %}
+{{ survey.text|safe }}
+{% endfilter %}
+    <hr>
     </div>
   {% else %}
     <div class="row">
