@@ -2,12 +2,12 @@
 
 # Imports
 import sqlite3
-from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash
+from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash, jsonify
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
 from flask.ext.wtf import Form
 from flaskext.markdown import Markdown
-from wtforms import BooleanField, TextField, TextAreaField, PasswordField, validators, ValidationError
+from wtforms import BooleanField, TextField, TextAreaField, PasswordField, FormField, FieldList, validators, ValidationError
 from datetime import datetime
 
 
@@ -39,17 +39,15 @@ class Survey(db.Model):
     __tablename__ = 'surveys'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.Text)
-    text = db.Column(db.Text)
     is_open = db.Column(db.Integer)
     date_created = db.Column(db.DateTime)
     date_opened = db.Column(db.DateTime)
     date_closed = db.Column(db.DateTime)
 
     questions = db.relationship('Question', backref='surveys')
-
-    def __init__(self, title, text, is_open=None):
+    
+    def __init__(self, title=None, is_open=None):
         self.title = title
-        self.text = text
         self.date_created = datetime.utcnow()
         if is_open is True:
             self.is_open = 1
@@ -68,17 +66,26 @@ class Question(db.Model):
     __tablename__ = 'questions'
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.Text)
+    order = db.Column(db.Integer)
     surveys_id = db.Column(db.Integer, db.ForeignKey('surveys.id'))
     
     survey = db.relationship('Survey', backref=db.backref('surveys', lazy='dynamic'))
     options = db.relationship('Option', backref='questions')
 
-    def __init__(self, text, survey):
-        self.text = text
+    def __init__(self, survey, text=None):
         self.survey = survey
+        self.text = text
+        self.order = survey.question_count() - 1
 
     def __repr__(self):
         return '<Question %r>' % self.id
+
+    def json(self):
+        obj = {'id':  self.id,
+               'text': self.text,
+               'order': self.order
+               }
+        return obj
 
     
 class Option(db.Model):
@@ -146,6 +153,19 @@ class User(db.Model):
 def init_db():
     db.drop_all()
     db.create_all()
+
+def init_dev_db():
+    db.drop_all()
+    db.create_all()
+    user1 = User('admin@surveyor.foo', '1234567')
+    user1.is_admin = 1
+    user1.name = 'Admin'
+    db.session.add(user1)
+    db.session.commit()
+    user2 = User('student@surveyor.foo', '1234567')
+    user2.name = 'Student'
+    db.session.add(user2)
+    db.session.commit()
 
 def connect_db():
     return sqlite3.connect(app.config['DATABASE'])
@@ -224,9 +244,11 @@ class AccountForm(Form):
     ])
     name = TextField('User Name')
 
+class EditQuestionForm(Form):
+    text = TextField('Text', [validators.required(message=u'question text is required')])
+
 class EditSurveyForm(Form):
-    title = TextField('Title', [validators.required()])
-    text = TextAreaField('Text - <small><a href="http://daringfireball.net/projects/markdown/basics">markdown documentation</a></small>', [validators.optional()])
+    title = TextField('Survey Title', [validators.required(message=u'a survey title is required')])
         
 # Routes
 
@@ -307,25 +329,37 @@ def edit_survey(id):
     if (survey == None):
         abort(404)
     form = EditSurveyForm(obj=survey)
-    if form.validate_on_submit():
-        survey.title = form.title.data
-        survey.text = form.text.data
-        db.session.commit()
-        return redirect(url_for('view_survey',id=survey.id))
-    return render_template('edit_survey.html', form=form, survey=survey, mode='edit')
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            survey.title = form.title.data
+            db.session.commit()
+            json = { 'a': 'Foo' }
+            return jsonify(**{'success': True})
+        else:
+            return jsonify(**form.errors)
+    else:
+        return render_template('edit_survey.html', form=form, survey=survey)
 
         
-@app.route('/surveys/add', methods=['GET','POST'])
+@app.route('/surveys/add')
 @login_required
 def add_survey():
-    form = EditSurveyForm()
-    if form.validate_on_submit():
-        survey = Survey(form.title.data, form.text.data)
-        db.session.add(survey)
-        db.session.commit()
-        return redirect(url_for('view_survey',id=survey.id))
-    return render_template('edit_survey.html', form=form, mode='add')
+    survey = Survey()
+    db.session.add(survey)
+    db.session.commit()
+    return redirect(url_for('edit_survey',id=survey.id))
 
+@app.route('/surveys/edit/<int:survey_id>/questions/add')
+@login_required
+def add_question_to_survey(survey_id):
+    survey = Survey.query.filter_by(id=survey_id).first()
+    if (survey == None):
+        return jsonify(**{'error': 'Invalid survey ID'})
+    else:
+        question = Question(survey)
+        db.session.add(question)
+        db.session.commit()
+        return jsonify(**{'success': True, 'question': question.json()})
 
 @app.route('/users')
 @login_required

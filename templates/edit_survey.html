@@ -1,40 +1,56 @@
 {% extends "layout.html" %}
 
-{% block title %}
-  {% if mode == 'edit' %}
-    Edit Survey #{{ survey.id }}
-  {% else %}
-    Add New Survey
-  {% endif %}
-{% endblock %}
+{% block title %}Edit Survey #{{ survey.id }}{% endblock %}
 
 {% block body %}
-{% if mode == 'edit' %}
-<form action="{{ url_for('edit_survey', id=survey.id) }}" method="POST">
-{% else %}
-<form action="{{ url_for('add_survey') }}" method="POST">
-{% endif %}
+<div class="row">
+  <a href="{{ url_for('view_survey', id=survey.id) }}">View Survey</a>
+</div>
+
+<hr>
+
+<form id="edit-survey" action="{{ url_for('edit_survey', id=survey.id) }}" method="POST">
   
   {{ form.csrf_token }}
   
   <div class="row">
-    {{ form.title.label }}
-    {% if form.errors['title'] %}
-      {% for error in form.errors['title'] %}
-        <div class="error">{{ error }}</div>
-      {% endfor %}
-    {% endif %}
-    {{ form.title(class="required") }}
+    <div class="ten columns">
+      <div class="row">
+        <div class="u-pull-left">{{ form.title.label }}</div>
+        <div id="edit-survey-messages" class="u-pull-right"></div>
+      </div>
+      <div class="row">
+        {{ form.title(class="required twelve columns")|safe }}
+      </div>
+    </div>
+    <div class="two columns">
+      <label>&nbsp;</label>
+      <button id="edit-survey-save">Save</button>
+    </div>
   </div>
-
-  <div class="row">
-    {{ form.text.label }}
-    {{ form.text()|safe }}
-  </div>
-
-  <div class="row">
-    <input type=submit value="Submit">
-  </div>
-
 </form>
+
+<hr>
+
+<h5>Questions <small><i>• text can be formatted with <a href="http://daringfireball.net/projects/markdown/basics">markdown</a></i></small></h5>
+  
+{% for question in survey.questions %}
+  <div class="row">
+    {{loop.index}}: {{ question.id }}
+  </div>
+{% endfor %}
+
+<div class="row">
+  <div class="three columns">
+    <button id="edit-survey-add-question">Add Question</button>
+  </div>
+  <div class="nine columns">
+    <div id="edit-survey-add-question-messages"></div>
+  </div>
+</div>
+  
+{% endblock %}
+
+{% block javascript %}
+<script src="{{ url_for("static", filename="edit_survey.js") }}"></script>
 {% endblock %}

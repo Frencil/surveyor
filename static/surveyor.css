@@ -45,6 +45,7 @@
     width: 80%; }
 
 div.error { color: #C93B2B; font-size: 11px; }
+div.info { color: #2B57C9; font-size: 11px; }
 div.success { color: #589E4A; font-size: 11px; }
 
 ul.messages { margin-top: 0.8rem; }

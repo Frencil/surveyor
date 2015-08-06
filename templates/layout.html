@@ -82,5 +82,10 @@
     {% block body %}{% endblock %}
   
   </div>
+
+  <script src="{{ url_for("static", filename="jquery-1.11.3.min.js") }}"></script>
+  {% block javascript %}{% endblock %}
+  
+</body>
   
 </html>
